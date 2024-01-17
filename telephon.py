@@ -1,72 +1,79 @@
 import asyncio
 
 from dotenv import load_dotenv
+
 load_dotenv()
 import telethon, os
 from telethon import TelegramClient
 from qrcode import QRCode
 from base64 import urlsafe_b64encode as base64url
 
-qr = QRCode()
+from threading import Thread
 
-def gen_qr(token:str):
+
+def qr(url):
+    qr = QRCode()
     qr.clear()
-    qr.add_data(token)
+    qr.add_data(url)
     qr.print_ascii()
-def display_url_as_qr(url):
-    print(url)  # do whatever to show url as a qr to the user
-    gen_qr(url)
 
-class Client():
+
+class Client(Thread):
     TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID')
     TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
 
     def __init__(self, phone: str):
+        super().__init__(daemon=True)
         self._client: telethon.TelegramClient = TelegramClient(phone,
                                                                self.TELEGRAM_API_ID,
                                                                self.TELEGRAM_API_HASH)
         self._state = 'not connected'
-        self._qr_link=None
+        self._qr_link = None
 
     @property
     def qr_link(self):
 
         return self._qr_link
+
     @qr_link.setter
-    def qr_link(self,link):
-        self._qr_link=link
+    def qr_link(self, link):
+        self._qr_link = link
 
     @property
     def state(self):
         return self._state
         ...
-    @state.setter
-    def state(self,st):
-        self._state=st
 
-    async def login(self):
-        await self._client.connect()
-        if  self._client.is_connected():
-            print(self._client.is_user_authorized())
-            self.state='connected'
-            return
-        qr_login = await self._client.qr_login()
-        isLogin=False
-        while not isLogin:
-            self.qr_link = qr_login.url
-            display_url_as_qr(self.qr_link)
-            try:
-                isLogin = await qr_login.wait(10)
-            except:
-                await qr_login.recreate()
-        print('connected')
+    @state.setter
+    def state(self, st):
+        self._state = st
+
+    async def get_qr(self):
+        if (not self._client.is_connected()):
+            await self._client.connect()
+            print(await self._client.get_me())
+        self._client.connect()
+        self._qr_link = await self._client.qr_login()
+        return self._qr_link.url
+
+    def run(self):
+        async def ase():
+
+            isLogin = False
+            while not isLogin:
+                with open('2.txt', 'a') as f:
+                    f.writelines('1')
+                try:
+                    isLogin = await self._qr_link.wait(1)
+                except:
+                    await self._qr_link.recreate()
+            self.state = 'connected'
+        loop=asyncio.new_event_loop()
+        loop.run_until_complete(ase())
 
 
     async def get_message(self, uname: str, count: int = 50):
-        if  self._client.is_connected():
-            for dialog in self._client.iter_dialogs():
-                if dialog.is_channel:
-                    print(f'{dialog.id}:{dialog.title}')
+        if self._client.is_connected():
             print(self._client.is_connected())
             entity = await self._client.get_entity(uname)
             print(entity)
@@ -84,6 +91,3 @@ class Client():
                 return 'error'
         else:
             return 'login filed'
-c=Client('a')
-
-
