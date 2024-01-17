@@ -1,7 +1,6 @@
 import requests
 
-
-class Scraper:
+class Scraper:  # апи выбрасывает id товара, можно использовать для генерации ссылки
     API_DOMAIN = 'https://search.wb.ru/exactmatch/ru/common/v4/search?TestGroup=no_test&TestID=no_test&appType=1&curr=rub&dest=-1257786&query={0}&resultset=catalog&sort=popular&spp=29&suppressSpellcheck=false'
     PRODUCT_DOMAIN = 'https://www.wildberries.ru/catalog/{0}/detail.aspx'
 
@@ -14,5 +13,7 @@ class Scraper:
             for i in items:
                 tmp.append({'title': f"{i['name']} {i['brand']}", 'link': self.PRODUCT_DOMAIN.format(i['id'])})
             return tmp
+        except AssertionError:
+            {'error':'api error'}
         except Exception as e:
             return {'error': 'connection error'}

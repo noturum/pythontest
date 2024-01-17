@@ -1,14 +1,16 @@
-import asyncio
-
 from scrap import Scraper
-import telephon
+
 
 import logging
 
 logging.basicConfig(filename='error.log',
                     format='[%(asctime)s] => %(message)s',
                     level=logging.ERROR)
-
+try:
+    import telephon
+except AssertionError as e:
+    logging.error(e)
+    exit(1)
 from flask import Flask, request, jsonify
 
 app = Flask('__name__')
@@ -20,12 +22,8 @@ async def login():
     if request.is_json:
         if phone := dict(request.json).get('phone'):
             clients[phone] = (client := telephon.Client(phone))
-
-            qr = await client.get_qr()
             client.start()
-
-
-
+            qr = client.get_qr()
 
             if qr:
                 return jsonify(qr_link_url=qr)
@@ -87,4 +85,4 @@ def scraper():
 #     return 'bad param' , 500
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8888, debug=False, load_dotenv=True)
+    app.run(host='0.0.0.0',port=80, load_dotenv=True)
